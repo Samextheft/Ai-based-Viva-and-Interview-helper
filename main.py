@@ -143,40 +143,126 @@
 
 
 
+# from question_gen import QuestionGenerator
+
+# generator = QuestionGenerator()
+
+
+# context = {
+#     "previous_question":
+#         "What is normalization in DBMS?",
+
+#     "candidate_answer":
+#         "Normalization reduces duplicate data.",
+
+#     "missing_concepts":
+#         ["1NF", "2NF", "3NF"],
+
+#     "misconceptions":
+#         [],
+
+#     "action":
+#         "follow_up"
+# }
+
+
+# question = generator.generate_question(
+#     domain="DBMS",
+#     topic="Normalization",
+#     difficulty="Intermediate",
+#     question_type="Conceptual",
+#     context=context
+# )
+
+
+# print("\nAdaptive Question:")
+# print(question["question"])
+
+# print("\nMetadata:")
+# print(question)
+
 from question_gen import QuestionGenerator
+from answer_eval import AnswerEvaluator
+from adaptive_control import AdaptiveController
+from interviewsession import InterviewSession
+
 
 generator = QuestionGenerator()
+evaluator = AnswerEvaluator()
+controller = AdaptiveController()
 
 
-context = {
-    "previous_question":
-        "What is normalization in DBMS?",
-
-    "candidate_answer":
-        "Normalization reduces duplicate data.",
-
-    "missing_concepts":
-        ["1NF", "2NF", "3NF"],
-
-    "misconceptions":
-        [],
-
-    "action":
-        "follow_up"
-}
-
-
-question = generator.generate_question(
+session = InterviewSession(
     domain="DBMS",
     topic="Normalization",
     difficulty="Intermediate",
-    question_type="Conceptual",
-    context=context
+    question_type="Conceptual"
 )
 
 
-print("\nAdaptive Question:")
-print(question["question"])
+context = None
 
-print("\nMetadata:")
-print(question)
+
+for i in range(3):
+
+    print("\n================================")
+    print(f"          QUESTION {i + 1}")
+    print("================================")
+
+    # Generate question
+    question_data = generator.generate_question(
+        domain=session.domain,
+        topic=session.topic,
+        difficulty=session.difficulty,
+        question_type=session.question_type,
+        context=context
+    )
+
+    question = question_data["question"]
+
+    print("\nQuestion:")
+    print(question)
+
+    # Candidate answer
+    answer = input("\nYour Answer:\n")
+
+    # Evaluate
+    evaluation = evaluator.evaluate(
+        question,
+        answer
+    )
+
+    print("\nScore:", evaluation["score"])
+    print("Coverage:", evaluation["concept_coverage"])
+    print("Feedback:", evaluation["feedback"])
+
+    # Adaptive decision
+    decision = controller.decide(evaluation)
+
+    print("\nNext Action:", decision["action"])
+    print("Reason:", decision["reason"])
+
+    # Store interaction
+    session.add_interaction(
+        question,
+        answer,
+        evaluation,
+        decision
+    )
+
+    # Prepare context for next question
+    context = {
+        "previous_question": question,
+        "candidate_answer": answer,
+        "missing_concepts": evaluation["missing_concepts"],
+        "misconceptions": evaluation["misconceptions"],
+        "action": decision["action"]
+    }
+
+
+print("\n================================")
+print("       INTERVIEW COMPLETED")
+print("================================")
+
+print("Questions Attempted:",
+      session.question_number)
